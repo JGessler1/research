@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Planner</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <main class="container">
+        <header>
+            <p class="eyebrow">YOUR FITNESS, YOUR PLAN</p>
+            <h1>Workout Planner</h1>
+            <p>Build a workout around your goals and schedule.</p>
+        </header>
+
+        <section class="panel">
+            <h2>Create Your Workout</h2>
+
+            <form id="workout-form">
+                <label for="goal">Fitness Goal</label>
+                <select id="goal">
+                    <option>General Fitness</option>
+                    <option>Build Muscle</option>
+                    <option>Cardio Fitness</option>
+                </select>
+
+                <label for="level">Experience Level</label>
+                <select id="level">
+                    <option>Beginner</option>
+                    <option>Intermediate</option>
+                </select>
+
+                <label for="duration">Available Time</label>
+                <select id="duration">
+                    <option value="15">15 minutes</option>
+                    <option value="30" selected>30 minutes</option>
+                    <option value="45">45 minutes</option>
+                    <option value="60">60 minutes</option>
+                </select>
+
+                <button type="submit">Generate My Workout</button>
+            </form>
+            <p id="error" class="error"></p>
+        </section>
+
+        <section id="results" class="results" hidden>
+            <p class="eyebrow">YOUR WORKOUT PLAN</p>
+            <h2 id="plan-title"></h2>
+            <p id="plan-details"></p>
+            <div id="exercise-list"></div>
+            <p class="note">
+                Warm up before exercising, rest as needed, and stop any
+                movement that causes pain. Exercise times are estimates.
+            </p>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById("workout-form");
+        const error = document.getElementById("error");
+        const results = document.getElementById("results");
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            error.textContent = "";
+            results.hidden = true;
+
+            try {
+                const response = await fetch("/generate", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        goal: document.getElementById("goal").value,
+                        level: document.getElementById("level").value,
+                        duration: document.getElementById("duration").value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Could not create workout.");
+                }
+
+                document.getElementById("plan-title").textContent = data.goal;
+                document.getElementById("plan-details").textContent =
+                    data.level + " level · " + data.duration + " minutes selected";
+
+                const list = document.getElementById("exercise-list");
+                list.replaceChildren();
+
+                data.exercises.forEach(function (exercise) {
+                    const article = document.createElement("article");
+                    article.className = "exercise";
+
+                    const name = document.createElement("h3");
+                    name.textContent = exercise.name;
+
+                    const details = document.createElement("p");
+                    details.textContent = exercise.sets + " sets · " + exercise.reps;
+
+                    article.append(name, details);
+                    list.appendChild(article);
+                });
+
+                results.hidden = false;
+            } catch (err) {
+                error.textContent = err.message;
+            }
+        });
+    </script>
+</body>
+</html>
